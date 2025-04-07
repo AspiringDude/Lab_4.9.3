@@ -9,6 +9,8 @@ import requests
 import urllib.parse
 import tkinter as tk
 from tkinter import ttk, messagebox
+import webbrowser
+
 
 # Define API Key
 key = "6666ec1d-f81a-4817-a5d2-8f6baedfd725"
@@ -67,6 +69,9 @@ def get_directions():
             result += "Arrive at destination (0.0 km)"
             output_text.delete(1.0, tk.END)
             output_text.insert(tk.END, result)
+
+            webbrowser.open(f"https://www.google.com/maps/dir/{orig[1]},{orig[2]}/{dest[1]},{dest[2]}/")
+
         else:
             messagebox.showerror("Error", "Failed to fetch route data.")
     else:
