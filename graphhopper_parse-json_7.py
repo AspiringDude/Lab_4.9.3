@@ -70,6 +70,14 @@ def get_directions():
             output_text.delete(1.0, tk.END)
             output_text.insert(tk.END, result)
 
+            # ✅ Feature: Open Google Maps in browser
+            webbrowser.open(f"https://www.google.com/maps/dir/{orig[1]},{orig[2]}/{dest[1]},{dest[2]}/")
+
+            # ✅ Feature: Log trip to a text file
+            with open("travel_log.txt", "a") as log:
+                log.write(f"{orig[3]} to {dest[3]} by {vehicle} - {km:.1f} km, {hrs:02d}:{mins:02d}:{sec:02d}\n")
+
+
             webbrowser.open(f"https://www.google.com/maps/dir/{orig[1]},{orig[2]}/{dest[1]},{dest[2]}/")
 
         else:
@@ -82,13 +90,11 @@ root = tk.Tk()
 root.title("GraphHopper Route Finder")
 root.geometry("600x500")
 
-# Vehicle selection first
 tk.Label(root, text="Vehicle:").pack()
 vehicle_var = tk.StringVar(value="car")
 vehicle_menu = ttk.Combobox(root, textvariable=vehicle_var, values=["car", "bike", "foot"])
 vehicle_menu.pack()
 
-# Then location inputs
 tk.Label(root, text="Starting Location:").pack()
 start_entry = tk.Entry(root, width=50)
 start_entry.pack()
