@@ -10,7 +10,9 @@ import urllib.parse
 import tkinter as tk
 from tkinter import ttk, messagebox
 import webbrowser
+
 from datetime import datetime
+
 
 # Define API Key
 key = "6666ec1d-f81a-4817-a5d2-8f6baedfd725"
@@ -44,7 +46,11 @@ def get_directions():
         return
 
     try:
+
         user_max_distance = float(user_max_distance)
+
+        user_max_distance = float(user_max_distance)  # Convert to float
+
     except ValueError:
         messagebox.showerror("Error", "Please enter a valid number for max distance.")
         return
@@ -65,6 +71,7 @@ def get_directions():
             sec = int(data["time"] / 1000 % 60)
             mins = int(data["time"] / 1000 / 60 % 60)
             hrs = int(data["time"] / 1000 / 60 / 60)
+
 
             if km > user_max_distance:
                 messagebox.showwarning("Distance Too Far", f"Trip is {km:.1f} km, exceeds your limit.")
@@ -89,6 +96,16 @@ def get_directions():
             with open("travel_log.txt", "a") as log:
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 log.write(f"{timestamp}: {orig[3]} to {dest[3]} by {vehicle} - {km:.1f} km, {hrs:02d}:{mins:02d}:{sec:02d}\n")
+
+            # ✅ Feature: Open Google Maps in browser
+            webbrowser.open(f"https://www.google.com/maps/dir/{orig[1]},{orig[2]}/{dest[1]},{dest[2]}/")
+
+            # ✅ Feature: Log trip to a text file
+            with open("travel_log.txt", "a") as log:
+                log.write(f"{orig[3]} to {dest[3]} by {vehicle} - {km:.1f} km, {hrs:02d}:{mins:02d}:{sec:02d}\n")
+
+            webbrowser.open(f"https://www.google.com/maps/dir/{orig[1]},{orig[2]}/{dest[1]},{dest[2]}/")
+
 
         else:
             messagebox.showerror("Error", "Failed to fetch route data.")
