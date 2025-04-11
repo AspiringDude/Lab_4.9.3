@@ -88,6 +88,8 @@ def get_directions():
             with open("travel_log.txt", "a") as log:
                 log.write(f"{orig[3]} to {dest[3]} by {vehicle} - {km:.1f} km, {hrs:02d}:{mins:02d}:{sec:02d}\n")
 
+            webbrowser.open(f"https://www.google.com/maps/dir/{orig[1]},{orig[2]}/{dest[1]},{dest[2]}/")
+
         else:
             messagebox.showerror("Error", "Failed to fetch route data.")
     else:
