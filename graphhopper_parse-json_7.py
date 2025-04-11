@@ -11,6 +11,9 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import webbrowser
 
+from datetime import datetime
+
+
 # Define API Key
 key = "6666ec1d-f81a-4817-a5d2-8f6baedfd725"
 route_url = "https://graphhopper.com/api/1/route?"
@@ -43,7 +46,11 @@ def get_directions():
         return
 
     try:
+
+        user_max_distance = float(user_max_distance)
+
         user_max_distance = float(user_max_distance)  # Convert to float
+
     except ValueError:
         messagebox.showerror("Error", "Please enter a valid number for max distance.")
         return
@@ -65,7 +72,7 @@ def get_directions():
             mins = int(data["time"] / 1000 / 60 % 60)
             hrs = int(data["time"] / 1000 / 60 / 60)
 
-            # Check if the trip exceeds the max distance
+
             if km > user_max_distance:
                 messagebox.showwarning("Distance Too Far", f"Trip is {km:.1f} km, exceeds your limit.")
                 return
@@ -78,8 +85,17 @@ def get_directions():
                 dist_km = step["distance"] / 1000
                 result += f"- {step['text']} ({dist_km:.1f} km)\n"
             result += "Arrive at destination (0.0 km)"
+
             output_text.delete(1.0, tk.END)
             output_text.insert(tk.END, result)
+
+            # ✅ Open Google Maps
+            webbrowser.open(f"https://www.google.com/maps/dir/{orig[1]},{orig[2]}/{dest[1]},{dest[2]}/")
+
+            # ✅ Log to text file with date
+            with open("travel_log.txt", "a") as log:
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                log.write(f"{timestamp}: {orig[3]} to {dest[3]} by {vehicle} - {km:.1f} km, {hrs:02d}:{mins:02d}:{sec:02d}\n")
 
             # ✅ Feature: Open Google Maps in browser
             webbrowser.open(f"https://www.google.com/maps/dir/{orig[1]},{orig[2]}/{dest[1]},{dest[2]}/")
@@ -90,15 +106,30 @@ def get_directions():
 
             webbrowser.open(f"https://www.google.com/maps/dir/{orig[1]},{orig[2]}/{dest[1]},{dest[2]}/")
 
+
         else:
             messagebox.showerror("Error", "Failed to fetch route data.")
     else:
         messagebox.showerror("Error", "Location not found.")
 
-# Tkinter GUI setup
+# ✅ Copy to clipboard with message
+def copy_to_clipboard():
+    directions = output_text.get(1.0, tk.END)
+    root.clipboard_clear()
+    root.clipboard_append(directions)
+    messagebox.showinfo("Copied", "Directions copied to clipboard!")
+
+# Tkinter GUI
 root = tk.Tk()
 root.title("GraphHopper Route Finder")
-root.geometry("600x500")
+root.geometry("600x540")
+
+def clear_all():
+    start_entry.delete(0, tk.END)
+    end_entry.delete(0, tk.END)
+    max_distance_entry.delete(0, tk.END)
+    output_text.delete(1.0, tk.END)
+
 
 tk.Label(root, text="Vehicle:").pack()
 vehicle_var = tk.StringVar(value="car")
@@ -113,12 +144,13 @@ tk.Label(root, text="Destination:").pack()
 end_entry = tk.Entry(root, width=50)
 end_entry.pack()
 
-# Add entry for max distance
 tk.Label(root, text="Max Distance (km):").pack()
 max_distance_entry = tk.Entry(root, width=50)
 max_distance_entry.pack()
 
 tk.Button(root, text="Get Directions", command=get_directions).pack(pady=10)
+tk.Button(root, text="Clear All", command=clear_all).pack(pady=10)
+tk.Button(root, text="Copy Directions", command=copy_to_clipboard).pack(pady=5)
 
 output_text = tk.Text(root, wrap=tk.WORD)
 output_text.pack(expand=True, fill=tk.BOTH, padx=10, pady=10)
