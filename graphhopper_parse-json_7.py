@@ -9,6 +9,7 @@ import requests
 import urllib.parse
 import tkinter as tk
 from tkinter import ttk, messagebox
+import webbrowser
 
 # Define API Key
 key = "6666ec1d-f81a-4817-a5d2-8f6baedfd725"
@@ -35,9 +36,16 @@ def get_directions():
     vehicle = vehicle_var.get()
     loc1 = start_entry.get()
     loc2 = end_entry.get()
+    user_max_distance = max_distance_entry.get()
 
     if not loc1 or not loc2:
         messagebox.showerror("Error", "Please enter both locations.")
+        return
+
+    try:
+        user_max_distance = float(user_max_distance)  # Convert to float
+    except ValueError:
+        messagebox.showerror("Error", "Please enter a valid number for max distance.")
         return
 
     orig = geocoding(loc1, key)
@@ -57,6 +65,11 @@ def get_directions():
             mins = int(data["time"] / 1000 / 60 % 60)
             hrs = int(data["time"] / 1000 / 60 / 60)
 
+            # Check if the trip exceeds the max distance
+            if km > user_max_distance:
+                messagebox.showwarning("Distance Too Far", f"Trip is {km:.1f} km, exceeds your limit.")
+                return
+
             result = f"Directions from {orig[3]} to {dest[3]} by {vehicle}:\n"
             result += f"Distance: {km:.1f} km / {miles:.1f} miles\n"
             result += f"Duration: {hrs:02d}:{mins:02d}:{sec:02d}\n\nSteps:\n"
@@ -67,6 +80,14 @@ def get_directions():
             result += "Arrive at destination (0.0 km)"
             output_text.delete(1.0, tk.END)
             output_text.insert(tk.END, result)
+
+            # ✅ Feature: Open Google Maps in browser
+            webbrowser.open(f"https://www.google.com/maps/dir/{orig[1]},{orig[2]}/{dest[1]},{dest[2]}/")
+
+            # ✅ Feature: Log trip to a text file
+            with open("travel_log.txt", "a") as log:
+                log.write(f"{orig[3]} to {dest[3]} by {vehicle} - {km:.1f} km, {hrs:02d}:{mins:02d}:{sec:02d}\n")
+
         else:
             messagebox.showerror("Error", "Failed to fetch route data.")
     else:
@@ -77,13 +98,11 @@ root = tk.Tk()
 root.title("GraphHopper Route Finder")
 root.geometry("600x500")
 
-# Vehicle selection first
 tk.Label(root, text="Vehicle:").pack()
 vehicle_var = tk.StringVar(value="car")
 vehicle_menu = ttk.Combobox(root, textvariable=vehicle_var, values=["car", "bike", "foot"])
 vehicle_menu.pack()
 
-# Then location inputs
 tk.Label(root, text="Starting Location:").pack()
 start_entry = tk.Entry(root, width=50)
 start_entry.pack()
@@ -91,6 +110,11 @@ start_entry.pack()
 tk.Label(root, text="Destination:").pack()
 end_entry = tk.Entry(root, width=50)
 end_entry.pack()
+
+# Add entry for max distance
+tk.Label(root, text="Max Distance (km):").pack()
+max_distance_entry = tk.Entry(root, width=50)
+max_distance_entry.pack()
 
 tk.Button(root, text="Get Directions", command=get_directions).pack(pady=10)
 
