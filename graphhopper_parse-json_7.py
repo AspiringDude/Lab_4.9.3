@@ -1,8 +1,16 @@
+# Group Name: Ahjin
+# Facilitator: Cyril Arnoco
+# Recorder: Shane Edward Tampus
+# Team Member: Juden Baguio
+# Team Member: Earl Rosaroso 
+# Team Member:  Van Arjay Alcazar
+
 import requests
 import urllib.parse
 import tkinter as tk
 from tkinter import ttk, messagebox
 import webbrowser
+
 
 # Define API Key
 key = "6666ec1d-f81a-4817-a5d2-8f6baedfd725"
@@ -68,6 +76,9 @@ def get_directions():
             # ✅ Feature: Log trip to a text file
             with open("travel_log.txt", "a") as log:
                 log.write(f"{orig[3]} to {dest[3]} by {vehicle} - {km:.1f} km, {hrs:02d}:{mins:02d}:{sec:02d}\n")
+
+
+            webbrowser.open(f"https://www.google.com/maps/dir/{orig[1]},{orig[2]}/{dest[1]},{dest[2]}/")
 
         else:
             messagebox.showerror("Error", "Failed to fetch route data.")
