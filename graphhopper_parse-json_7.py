@@ -4,6 +4,9 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import webbrowser
 from datetime import datetime
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+
 
 # Define API Key
 key = "6666ec1d-f81a-4817-a5d2-8f6baedfd725"
@@ -103,10 +106,34 @@ def clear_log():
         messagebox.showerror("Error", f"Failed to clear log: {e}")
 
 def clear_all():
+    
     start_entry.delete(0, tk.END)
     end_entry.delete(0, tk.END)
     max_distance_entry.delete(0, tk.END)
     output_text.delete(1.0, tk.END)
+
+def save_as_pdf():
+    directions = output_text.get(1.0, tk.END).strip()
+    if not directions:
+        messagebox.showwarning("Empty", "No directions to save.")
+        return
+    try:
+        filename = f"route_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        c = canvas.Canvas(filename, pagesize=letter)
+        width, height = letter
+        lines = directions.split('\n')
+        y = height - 40
+        for line in lines:
+            c.drawString(40, y, line)
+            y -= 15
+            if y < 40:
+                c.showPage()
+                y = height - 40
+        c.save()
+        messagebox.showinfo("Saved", f"Directions saved as {filename}")
+    except Exception as e:
+        messagebox.showerror("Error", f"Could not save PDF: {e}")
+
 
 # Tkinter GUI
 root = tk.Tk()
@@ -134,6 +161,8 @@ tk.Button(root, text="Get Directions", command=get_directions).pack(pady=10)
 tk.Button(root, text="Clear All", command=clear_all).pack(pady=10)
 tk.Button(root, text="Copy Directions", command=copy_to_clipboard).pack(pady=5)
 tk.Button(root, text="Clear Log", command=clear_log).pack(pady=5)
+tk.Button(root, text="Save as PDF", command=save_as_pdf).pack(pady=5)
+
 
 output_text = tk.Text(root, wrap=tk.WORD)
 output_text.pack(expand=True, fill=tk.BOTH, padx=10, pady=10)
