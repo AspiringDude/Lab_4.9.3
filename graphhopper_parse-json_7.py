@@ -4,14 +4,16 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import webbrowser
 from datetime import datetime
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-
+import os
 
 # Define API Key
 key = "6666ec1d-f81a-4817-a5d2-8f6baedfd725"
 route_url = "https://graphhopper.com/api/1/route?"
 
+fuel_efficiency = {"car": 12, "bike": 35, "foot": 0}  # km per liter
+fuel_price_per_liter = 65  # PHP or your local currency
+
+# Geocoding function
 def geocoding(location, key):
     geocode_url = "https://graphhopper.com/api/1/geocode?"
     url = geocode_url + urllib.parse.urlencode({"q": location, "limit": "1", "key": key})
@@ -29,6 +31,7 @@ def geocoding(location, key):
             return 200, point["lat"], point["lng"], location_name
     return json_status, "null", "null", location
 
+# Get directions function
 def get_directions():
     vehicle = vehicle_var.get()
     loc1 = start_entry.get()
@@ -68,8 +71,15 @@ def get_directions():
 
             result = f"Directions from {orig[3]} to {dest[3]} by {vehicle}:\n"
             result += f"Distance: {km:.1f} km / {miles:.1f} miles\n"
-            result += f"Duration: {hrs:02d}:{mins:02d}:{sec:02d}\n\nSteps:\n"
+            result += f"Duration: {hrs:02d}:{mins:02d}:{sec:02d}\n"
 
+            # Estimated fuel cost
+            if fuel_efficiency[vehicle] > 0:
+                liters_needed = km / fuel_efficiency[vehicle]
+                estimated_cost = liters_needed * fuel_price_per_liter
+                result += f"Estimated Fuel Cost: ₱{estimated_cost:.2f}\n"
+
+            result += "\nSteps:\n"
             for step in data["instructions"]:
                 dist_km = step["distance"] / 1000
                 result += f"- {step['text']} ({dist_km:.1f} km)\n"
@@ -78,64 +88,59 @@ def get_directions():
             output_text.delete(1.0, tk.END)
             output_text.insert(tk.END, result)
 
-            # Open Google Maps (only once)
-            webbrowser.open(f"https://www.google.com/maps/dir/{orig[1]},{orig[2]}/{dest[1]},{dest[2]}")
+            # Open Google Maps
+            webbrowser.open(f"https://www.google.com/maps/dir/{orig[1]},{orig[2]}/{dest[1]},{dest[2]}/")
 
-            # Log to text file with date
+            # Log to travel log
             with open("travel_log.txt", "a") as log:
                 timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                 log.write(f"{timestamp}: {orig[3]} to {dest[3]} by {vehicle} - {km:.1f} km, {hrs:02d}:{mins:02d}:{sec:02d}\n")
 
+            # Save to favorites
+            with open("favorite_routes.txt", "a") as fav:
+                fav.write(f"{loc1},{loc2},{vehicle}\n")
         else:
             messagebox.showerror("Error", "Failed to fetch route data.")
     else:
         messagebox.showerror("Error", "Location not found.")
 
+# Load favorites
+def load_favorites():
+    if not os.path.exists("favorite_routes.txt"):
+        return
+    with open("favorite_routes.txt", "r") as fav:
+        lines = fav.readlines()
+        if lines:
+            favorites_menu["values"] = [line.strip() for line in lines[-5:]]
+
+# Use selected favorite
+
+def use_favorite(event):
+    selected = favorite_var.get()
+    if selected:
+        parts = selected.split(",")
+        if len(parts) == 3:
+            start_entry.delete(0, tk.END)
+            start_entry.insert(0, parts[0])
+            end_entry.delete(0, tk.END)
+            end_entry.insert(0, parts[1])
+            vehicle_var.set(parts[2])
+
+# Copy to clipboard
 def copy_to_clipboard():
     directions = output_text.get(1.0, tk.END)
     root.clipboard_clear()
     root.clipboard_append(directions)
     messagebox.showinfo("Copied", "Directions copied to clipboard!")
 
-def clear_log():
-    try:
-        with open("travel_log.txt", "w") as log:
-            log.truncate(0)  # Clear the file contents
-        messagebox.showinfo("Log Cleared", "Travel log has been cleared.")
-    except Exception as e:
-        messagebox.showerror("Error", f"Failed to clear log: {e}")
-
+# Clear all fields
 def clear_all():
-    
     start_entry.delete(0, tk.END)
     end_entry.delete(0, tk.END)
     max_distance_entry.delete(0, tk.END)
     output_text.delete(1.0, tk.END)
 
-def save_as_pdf():
-    directions = output_text.get(1.0, tk.END).strip()
-    if not directions:
-        messagebox.showwarning("Empty", "No directions to save.")
-        return
-    try:
-        filename = f"route_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
-        c = canvas.Canvas(filename, pagesize=letter)
-        width, height = letter
-        lines = directions.split('\n')
-        y = height - 40
-        for line in lines:
-            c.drawString(40, y, line)
-            y -= 15
-            if y < 40:
-                c.showPage()
-                y = height - 40
-        c.save()
-        messagebox.showinfo("Saved", f"Directions saved as {filename}")
-    except Exception as e:
-        messagebox.showerror("Error", f"Could not save PDF: {e}")
-
-
-# Tkinter GUI
+# Tkinter GUI setup
 root = tk.Tk()
 root.title("GraphHopper Route Finder")
 root.geometry("600x600")
@@ -157,12 +162,15 @@ tk.Label(root, text="Max Distance (km):").pack()
 max_distance_entry = tk.Entry(root, width=50)
 max_distance_entry.pack()
 
-tk.Button(root, text="Get Directions", command=get_directions).pack(pady=10)
-tk.Button(root, text="Clear All", command=clear_all).pack(pady=10)
+tk.Button(root, text="Get Directions", command=get_directions).pack(pady=5)
+tk.Button(root, text="Clear All", command=clear_all).pack(pady=5)
 tk.Button(root, text="Copy Directions", command=copy_to_clipboard).pack(pady=5)
-tk.Button(root, text="Clear Log", command=clear_log).pack(pady=5)
-tk.Button(root, text="Save as PDF", command=save_as_pdf).pack(pady=5)
 
+tk.Label(root, text="Recent Favorite Routes:").pack()
+favorite_var = tk.StringVar()
+favorites_menu = ttk.Combobox(root, textvariable=favorite_var, postcommand=load_favorites)
+favorites_menu.pack()
+favorites_menu.bind("<<ComboboxSelected>>", use_favorite)
 
 output_text = tk.Text(root, wrap=tk.WORD)
 output_text.pack(expand=True, fill=tk.BOTH, padx=10, pady=10)
